@@ -15,3 +15,4 @@ function App() {
 }
 
 export default App;
+// This is the main entry point for the React application.
