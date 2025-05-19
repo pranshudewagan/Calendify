@@ -1,5 +1,5 @@
 import React from 'react';
-import OCRUpload from './components/OCRUpload';
+import ScheduleUpload from './components/ScheduleUpload';
 
 function App() {
   return (
@@ -8,11 +8,10 @@ function App() {
         Calendify
       </header>
       <main className="p-6">
-        <OCRUpload />
+        <ScheduleUpload />
       </main>
     </div>
   );
 }
 
 export default App;
-// This is the main entry point for the React application.
