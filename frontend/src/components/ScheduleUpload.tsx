@@ -89,7 +89,10 @@ const ScheduleUpload: React.FC = () => {
     blocks.forEach(block => {
       const lines = block.text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
       if (lines.length < 2) return; // Need at least course and time
-      const course = lines[0].replace(/^[^A-Za-z0-9]+/, '').trim();
+      const course = lines[0]
+        .replace(/^[^A-Za-z0-9]+/, '')
+        .replace(/\).*/, ')')
+        .trim();
       // Parse time slot (e.g., 1:20PM-2:10PM or 11:00 AM-11:50 AM)
       const timeLine = lines[1];
       let startTime = '', endTime = '';
@@ -196,6 +199,48 @@ const ScheduleUpload: React.FC = () => {
       updatedList[index] = updated;
       return updatedList;
     });
+    // If days or times changed, update main entries (calendar)
+    const prevEntry = groupedTableEntries[index];
+    if (
+      prevEntry.days.join(',') !== updated.days.join(',') ||
+      prevEntry.startTime !== updated.startTime ||
+      prevEntry.endTime !== updated.endTime
+    ) {
+      setEntries(currentEntries => {
+        // For each entry, if it matches the permutation, update days/times
+        let updatedEntries = currentEntries.map(e => {
+          if (
+            e.course === updated.course &&
+            e.startTime === prevEntry.startTime &&
+            e.endTime === prevEntry.endTime
+          ) {
+            // Only keep entries for days that are still selected
+            if (updated.days.includes(e.days[0])) {
+              return {
+                ...e,
+                startTime: updated.startTime,
+                endTime: updated.endTime,
+                days: [e.days[0]],
+              };
+            } else {
+              // Remove this entry if its day is no longer selected
+              return null;
+            }
+          }
+          return e;
+        }).filter(Boolean) as ProcessedEntry[];
+        // Add new entries for days that were toggled ON
+        const prevDays = new Set(prevEntry.days);
+        const addedDays = updated.days.filter(day => !prevDays.has(day));
+        for (const day of addedDays) {
+          updatedEntries.push({
+            ...updated,
+            days: [day],
+          });
+        }
+        return updatedEntries;
+      });
+    }
   };
 
   return (
