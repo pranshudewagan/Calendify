@@ -89,7 +89,7 @@ const ScheduleUpload: React.FC = () => {
     blocks.forEach(block => {
       const lines = block.text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
       if (lines.length < 2) return; // Need at least course and time
-      const course = lines[0];
+      const course = lines[0].replace(/^[^A-Za-z0-9]+/, '').trim();
       // Parse time slot (e.g., 1:20PM-2:10PM or 11:00 AM-11:50 AM)
       const timeLine = lines[1];
       let startTime = '', endTime = '';
