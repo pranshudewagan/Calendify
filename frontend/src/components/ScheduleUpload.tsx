@@ -174,6 +174,25 @@ const ScheduleUpload: React.FC = () => {
     setEntries(updatedList);
   };
 
+  // Group entries by (course, startTime, endTime) permutation for the editable table
+  function groupEntriesByPermutation(entries: ProcessedEntry[]): ProcessedEntry[] {
+    const map = new Map<string, ProcessedEntry>();
+    for (const entry of entries) {
+      const key = `${entry.course}|${entry.startTime}|${entry.endTime}`;
+      if (map.has(key)) {
+        // Merge days
+        const existing = map.get(key)!;
+        existing.days = Array.from(new Set([...existing.days, ...entry.days]));
+      } else {
+        map.set(key, { ...entry, days: [...entry.days] });
+      }
+    }
+    return Array.from(map.values());
+  }
+
+  // In the component, use grouped entries for the table, but all entries for the calendar
+  const groupedEntries = groupEntriesByPermutation(entries);
+
   return (
     <ErrorBoundary
       FallbackComponent={ErrorFallback}
@@ -241,7 +260,7 @@ const ScheduleUpload: React.FC = () => {
         {entries.length > 0 && !loading && (
           <div className="space-y-8">
             <Calendar entries={entries} />
-            <ScheduleTable entries={entries} onEdit={handleEdit} />
+            <ScheduleTable entries={groupedEntries} onEdit={handleEdit} />
           </div>
         )}
         {entries.length === 0 && rawBlocks.length > 0 && !loading && (
