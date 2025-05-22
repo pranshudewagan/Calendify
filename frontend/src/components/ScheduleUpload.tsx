@@ -32,6 +32,7 @@ const ScheduleUpload: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [rawBlocks, setRawBlocks] = useState<string[]>([]);
+  const [groupedTableEntries, setGroupedTableEntries] = useState<ProcessedEntry[]>([]);
 
   // Dynamically determine day columns based on block positions
   function getDayBoundaries(blocks: { position: { x: number } }[]): { minX: number; maxX: number }[] {
@@ -168,12 +169,6 @@ const ScheduleUpload: React.FC = () => {
     }
   };
 
-  const handleEdit = (index: number, updated: ProcessedEntry) => {
-    const updatedList = [...entries];
-    updatedList[index] = updated;
-    setEntries(updatedList);
-  };
-
   // Group entries by (course, startTime, endTime) permutation for the editable table
   function groupEntriesByPermutation(entries: ProcessedEntry[]): ProcessedEntry[] {
     const map = new Map<string, ProcessedEntry>();
@@ -190,8 +185,18 @@ const ScheduleUpload: React.FC = () => {
     return Array.from(map.values());
   }
 
-  // In the component, use grouped entries for the table, but all entries for the calendar
-  const groupedEntries = groupEntriesByPermutation(entries);
+  React.useEffect(() => {
+    setGroupedTableEntries(groupEntriesByPermutation(entries));
+  }, [entries]);
+
+  // Only update location in groupedTableEntries, not in entries (calendar)
+  const handleEdit = (index: number, updated: ProcessedEntry) => {
+    setGroupedTableEntries(prev => {
+      const updatedList = [...prev];
+      updatedList[index] = updated;
+      return updatedList;
+    });
+  };
 
   return (
     <ErrorBoundary
@@ -260,7 +265,7 @@ const ScheduleUpload: React.FC = () => {
         {entries.length > 0 && !loading && (
           <div className="space-y-8">
             <Calendar entries={entries} />
-            <ScheduleTable entries={groupedEntries} onEdit={handleEdit} />
+            <ScheduleTable entries={groupedTableEntries} onEdit={handleEdit} />
           </div>
         )}
         {entries.length === 0 && rawBlocks.length > 0 && !loading && (
