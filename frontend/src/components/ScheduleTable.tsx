@@ -34,7 +34,7 @@ const ScheduleTable: React.FC<Props> = ({ entries, onEdit }) => {
             <tr className="bg-gray-50">
               <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Course</th>
               <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Days</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Time</th>
+              <th className="px-4 py-2 text-left text-sm font-medium text-gray-500 min-w-[250px]">Time</th>
               <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Location</th>
             </tr>
           </thead>
@@ -68,7 +68,7 @@ const ScheduleTable: React.FC<Props> = ({ entries, onEdit }) => {
                     ))}
                   </div>
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-4 py-2 min-w-[250px]">
                   <div className="flex items-center gap-2">
                     <input
                       type="time"
@@ -76,7 +76,7 @@ const ScheduleTable: React.FC<Props> = ({ entries, onEdit }) => {
                       onChange={e =>
                         onEdit(idx, { ...entry, startTime: e.target.value })
                       }
-                      className={`px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-36 px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         entry.startTime && !validateTime(entry.startTime)
                           ? 'border-red-500'
                           : ''
@@ -89,7 +89,7 @@ const ScheduleTable: React.FC<Props> = ({ entries, onEdit }) => {
                       onChange={e =>
                         onEdit(idx, { ...entry, endTime: e.target.value })
                       }
-                      className={`px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-36 px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         entry.endTime && !validateTime(entry.endTime)
                           ? 'border-red-500'
                           : ''

@@ -53,6 +53,18 @@ def detect_table_structure(binary_image):
     except Exception as e:
         raise ImageProcessingError(f"Failed to detect table structure: {str(e)}")
 
+def detect_colored_blocks(image):
+    """Detect colored blocks in the schedule image."""
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    # Mask for non-white (colored) regions
+    lower = np.array([0, 30, 30])
+    upper = np.array([180, 255, 255])
+    mask = cv2.inRange(hsv, lower, upper)
+    # Morphological operations to clean up
+    kernel = np.ones((5, 5), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    return mask
+
 def extract_text_from_roi(image, x, y, w, h):
     """Extract text from a region of interest using OCR"""
     try:
@@ -88,26 +100,28 @@ def parse_schedule(filepath):
         if image.shape[0] < 100 or image.shape[1] < 100:
             raise ImageProcessingError("Image dimensions too small")
             
-        # Process image
-        binary = enhance_image(image)
-        table_mask = detect_table_structure(binary)
-        
-        # Find contours
-        contours, _ = cv2.findContours(table_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        # Detect colored blocks instead of table structure
+        colored_mask = detect_colored_blocks(image)
+        contours, _ = cv2.findContours(colored_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         # Sort contours by position (top to bottom, left to right)
         contours = sorted(contours, key=lambda c: (cv2.boundingRect(c)[1], cv2.boundingRect(c)[0]))
         
+        logger.info(f"Found {len(contours)} contours.")
         results = []
         for cnt in contours:
             x, y, w, h = cv2.boundingRect(cnt)
+            logger.info(f"Contour at x={x}, y={y}, w={w}, h={h}")
             
-            # Filter out small boxes
-            if w < 50 or h < 20:
+            # Lowered filter out small boxes
+            if w < 20 or h < 10:
+                logger.info(f"Skipping small contour at x={x}, y={y}, w={w}, h={h}")
                 continue
                 
             # Extract text from cell
             text = extract_text_from_roi(image, x, y, w, h)
+            logger.info(f"Extracted text: '{text}' from x={x}, y={y}, w={w}, h={h}")
+            print(f"OCR Block: '{text}' at x={x}, y={y}, w={w}, h={h}")
             
             if text:
                 results.append({
@@ -119,11 +133,14 @@ def parse_schedule(filepath):
                         "height": int(h)
                     }
                 })
+            
+            cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
         
         if not results:
             logger.warning("No text was extracted from the image")
             return {"warning": "No text could be extracted from the image", "schedule": []}
             
+        cv2.imwrite('debug_contours.png', image)
         return {"schedule": results}
         
     except FileNotFoundError as e:
