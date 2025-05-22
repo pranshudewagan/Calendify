@@ -1,3 +1,4 @@
 backend/venv/
 frontend/.env
 backend/.env
+backend/debug_contours.png

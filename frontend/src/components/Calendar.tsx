@@ -126,7 +126,7 @@ const Calendar: React.FC<Props> = ({ entries }) => {
           {timeSlots.map(time => (
             <div
               key={time}
-              className="h-[30px] p-2 text-xs text-gray-500 w-[200px]"
+              className="h-[30px] p-2 text-xs text-gray-500 w-32"
             >
               {format12Hour(time)}
             </div>
