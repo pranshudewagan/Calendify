@@ -25,7 +25,7 @@ const ScheduleTable: React.FC<Props> = ({ entries, onEdit }) => {
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <h3 className="text-lg font-semibold p-4 bg-gray-50 border-b">
-        Parsed Schedule
+        Edit Schedule
       </h3>
       
       <div className="overflow-x-auto">
