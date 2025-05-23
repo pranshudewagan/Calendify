@@ -2,3 +2,7 @@ backend/venv/
 frontend/.env
 backend/.env
 backend/debug_contours.png
+backend/__pycache__/
+backend/uploads/
+
+frontend/node_modules/
