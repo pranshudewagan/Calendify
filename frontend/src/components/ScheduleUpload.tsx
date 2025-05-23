@@ -36,6 +36,66 @@ const ScheduleUpload: React.FC = () => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [semesterStart, setSemesterStart] = useState('2025-09-03');
   const [semesterEnd, setSemesterEnd] = useState('2025-12-10');
+  const [timeZone, setTimeZone] = useState('America/Chicago');
+
+  // List of IANA time zones ordered by GMT offset
+  const timeZones = [
+    { value: 'Pacific/Midway', label: '(GMT-11:00) Midway Island (Pacific/Midway)' },
+    { value: 'Pacific/Honolulu', label: '(GMT-10:00) Hawaii (Pacific/Honolulu)' },
+    { value: 'America/Anchorage', label: '(GMT-09:00) Alaska (America/Anchorage)' },
+    { value: 'America/Los_Angeles', label: '(GMT-08:00) Pacific Time (America/Los_Angeles)' },
+    { value: 'America/Tijuana', label: '(GMT-08:00) Tijuana (America/Tijuana)' },
+    { value: 'America/Denver', label: '(GMT-07:00) Mountain Time (America/Denver)' },
+    { value: 'America/Phoenix', label: '(GMT-07:00) Arizona (America/Phoenix)' },
+    { value: 'America/Chihuahua', label: '(GMT-07:00) Chihuahua (America/Chihuahua)' },
+    { value: 'America/Chicago', label: '(GMT-06:00) Central Time (America/Chicago)' },
+    { value: 'America/Regina', label: '(GMT-06:00) Saskatchewan (America/Regina)' },
+    { value: 'America/Mexico_City', label: '(GMT-06:00) Mexico City (America/Mexico_City)' },
+    { value: 'America/New_York', label: '(GMT-05:00) Eastern Time (America/New_York)' },
+    { value: 'America/Indiana/Indianapolis', label: '(GMT-05:00) Indiana (America/Indiana/Indianapolis)' },
+    { value: 'America/Bogota', label: '(GMT-05:00) Bogota (America/Bogota)' },
+    { value: 'America/Caracas', label: '(GMT-04:30) Caracas (America/Caracas)' },
+    { value: 'America/Halifax', label: '(GMT-04:00) Atlantic Time (America/Halifax)' },
+    { value: 'America/La_Paz', label: '(GMT-04:00) La Paz (America/La_Paz)' },
+    { value: 'America/Santiago', label: '(GMT-04:00) Santiago (America/Santiago)' },
+    { value: 'America/St_Johns', label: '(GMT-03:30) Newfoundland (America/St_Johns)' },
+    { value: 'America/Argentina/Buenos_Aires', label: '(GMT-03:00) Buenos Aires (America/Argentina/Buenos_Aires)' },
+    { value: 'America/Sao_Paulo', label: '(GMT-03:00) Sao Paulo (America/Sao_Paulo)' },
+    { value: 'Atlantic/South_Georgia', label: '(GMT-02:00) South Georgia (Atlantic/South_Georgia)' },
+    { value: 'Atlantic/Azores', label: '(GMT-01:00) Azores (Atlantic/Azores)' },
+    { value: 'Atlantic/Cape_Verde', label: '(GMT-01:00) Cape Verde (Atlantic/Cape_Verde)' },
+    { value: 'Europe/London', label: '(GMT+00:00) London (Europe/London)' },
+    { value: 'UTC', label: '(GMT+00:00) UTC' },
+    { value: 'Africa/Casablanca', label: '(GMT+00:00) Casablanca (Africa/Casablanca)' },
+    { value: 'Europe/Berlin', label: '(GMT+01:00) Berlin (Europe/Berlin)' },
+    { value: 'Europe/Paris', label: '(GMT+01:00) Paris (Europe/Paris)' },
+    { value: 'Europe/Rome', label: '(GMT+01:00) Rome (Europe/Rome)' },
+    { value: 'Europe/Amsterdam', label: '(GMT+01:00) Amsterdam (Europe/Amsterdam)' },
+    { value: 'Europe/Prague', label: '(GMT+01:00) Prague (Europe/Prague)' },
+    { value: 'Europe/Athens', label: '(GMT+02:00) Athens (Europe/Athens)' },
+    { value: 'Europe/Helsinki', label: '(GMT+02:00) Helsinki (Europe/Helsinki)' },
+    { value: 'Europe/Istanbul', label: '(GMT+03:00) Istanbul (Europe/Istanbul)' },
+    { value: 'Europe/Moscow', label: '(GMT+03:00) Moscow (Europe/Moscow)' },
+    { value: 'Asia/Jerusalem', label: '(GMT+02:00) Jerusalem (Asia/Jerusalem)' },
+    { value: 'Asia/Baghdad', label: '(GMT+03:00) Baghdad (Asia/Baghdad)' },
+    { value: 'Asia/Tehran', label: '(GMT+03:30) Tehran (Asia/Tehran)' },
+    { value: 'Asia/Dubai', label: '(GMT+04:00) Dubai (Asia/Dubai)' },
+    { value: 'Asia/Baku', label: '(GMT+04:00) Baku (Asia/Baku)' },
+    { value: 'Asia/Kabul', label: '(GMT+04:30) Kabul (Asia/Kabul)' },
+    { value: 'Asia/Karachi', label: '(GMT+05:00) Karachi (Asia/Karachi)' },
+    { value: 'Asia/Kolkata', label: '(GMT+05:30) India (Asia/Kolkata)' },
+    { value: 'Asia/Kathmandu', label: '(GMT+05:45) Kathmandu (Asia/Kathmandu)' },
+    { value: 'Asia/Dhaka', label: '(GMT+06:00) Dhaka (Asia/Dhaka)' },
+    { value: 'Asia/Bangkok', label: '(GMT+07:00) Bangkok (Asia/Bangkok)' },
+    { value: 'Asia/Hong_Kong', label: '(GMT+08:00) Hong Kong (Asia/Hong_Kong)' },
+    { value: 'Asia/Singapore', label: '(GMT+08:00) Singapore (Asia/Singapore)' },
+    { value: 'Asia/Tokyo', label: '(GMT+09:00) Tokyo (Asia/Tokyo)' },
+    { value: 'Asia/Seoul', label: '(GMT+09:00) Seoul (Asia/Seoul)' },
+    { value: 'Australia/Sydney', label: '(GMT+10:00) Sydney (Australia/Sydney)' },
+    { value: 'Pacific/Auckland', label: '(GMT+12:00) Auckland (Pacific/Auckland)' },
+    { value: 'Pacific/Fiji', label: '(GMT+12:00) Fiji (Pacific/Fiji)' },
+    // Add more as needed
+  ];
 
   // Dynamically determine day columns based on block positions
   function getDayBoundaries(blocks: { position: { x: number } }[]): { minX: number; maxX: number }[] {
@@ -296,8 +356,8 @@ const ScheduleUpload: React.FC = () => {
         console.log(`VEVENT: ${entry.course} | Day: ${day} | DTSTART: ${dtstart} | RRULE: FREQ=WEEKLY;BYDAY=${byday};UNTIL=${until}`);
         ics += 'BEGIN:VEVENT\n';
         ics += `SUMMARY:${entry.course}\n`;
-        ics += `DTSTART;TZID=America/Chicago:${dtstart}\n`;
-        ics += `DTEND;TZID=America/Chicago:${dtend}\n`;
+        ics += `DTSTART;TZID=${timeZone}:${dtstart}\n`;
+        ics += `DTEND;TZID=${timeZone}:${dtend}\n`;
         ics += `RRULE:FREQ=WEEKLY;BYDAY=${byday};UNTIL=${until}\n`;
         if (entry.location) ics += `LOCATION:${entry.location}\n`;
         ics += 'END:VEVENT\n';
@@ -309,7 +369,7 @@ const ScheduleUpload: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'schedule.ics';
+    a.download = 'Your Schedule by Calendify.ics';
     document.body.appendChild(a);
     a.click();
     setTimeout(() => {
@@ -422,6 +482,18 @@ const ScheduleUpload: React.FC = () => {
                   onChange={e => setSemesterEnd(e.target.value)}
                   className="border rounded px-2 py-1"
                 />
+              </label>
+              <label className="flex flex-col items-center">
+                <span className="font-medium mb-1">Time Zone</span>
+                <select
+                  value={timeZone}
+                  onChange={e => setTimeZone(e.target.value)}
+                  className="border rounded px-2 py-1 min-w-[220px]"
+                >
+                  {timeZones.map(tz => (
+                    <option key={tz.value} value={tz.value}>{tz.label}</option>
+                  ))}
+                </select>
               </label>
             </div>
             <ScheduleTable entries={groupedTableEntries} onEdit={handleEdit} />
