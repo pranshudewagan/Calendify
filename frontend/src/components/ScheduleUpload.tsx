@@ -33,6 +33,9 @@ const ScheduleUpload: React.FC = () => {
   const [dragActive, setDragActive] = useState(false);
   const [rawBlocks, setRawBlocks] = useState<string[]>([]);
   const [groupedTableEntries, setGroupedTableEntries] = useState<ProcessedEntry[]>([]);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [semesterStart, setSemesterStart] = useState('2025-09-03');
+  const [semesterEnd, setSemesterEnd] = useState('2025-12-10');
 
   // Dynamically determine day columns based on block positions
   function getDayBoundaries(blocks: { position: { x: number } }[]): { minX: number; maxX: number }[] {
@@ -78,6 +81,11 @@ const ScheduleUpload: React.FC = () => {
     // Dynamically determine day columns
     const columns = getDayBoundaries(blocks);
     const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    // Debug log for column-to-day mapping
+    console.log('Detected columns and day mapping:');
+    columns.forEach((col, i) => {
+      console.log(`Column ${i}: ${DAYS[i] || `Day${i+1}`} (minX=${col.minX}, maxX=${col.maxX})`);
+    });
     // Map each block to a day
     function getDayFromX(x) {
       for (let i = 0; i < columns.length; i++) {
@@ -243,6 +251,73 @@ const ScheduleUpload: React.FC = () => {
     }
   };
 
+  // Helper to get weekday abbreviation for RRULE
+  const dayToRRule = {
+    'Mon': 'MO',
+    'Tue': 'TU',
+    'Wed': 'WE',
+    'Thu': 'TH',
+    'Fri': 'FR',
+    'Sat': 'SA',
+    'Sun': 'SU',
+  };
+
+  // Helper to get the first date for a given weekday on or after a start date
+  function getFirstDateForDay(start: string, day: string): string {
+    // Parse as local date
+    const [year, month, dayOfMonth] = start.split('-').map(Number);
+    const date = new Date(year, month - 1, dayOfMonth);
+    const target = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(day);
+    const current = date.getDay();
+    let diff = (target - current + 7) % 7;
+    date.setDate(date.getDate() + diff);
+    return date.toISOString().slice(0,10);
+  }
+
+  // Helper to format date and time for ICS DTSTART/DTEND
+  function formatICSTime(date: string, time: string): string {
+    // date: '2025-09-03', time: '13:20' => '20250903T132000'
+    return date.replace(/-/g, '') + 'T' + time.replace(':', '') + '00';
+  }
+
+  function downloadICS() {
+    let ics = 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Calendify//EN\n';
+    groupedTableEntries.forEach(entry => {
+      entry.days.forEach(day => {
+        const byday = dayToRRule[day];
+        if (!byday) return;
+        // For this day, find the first date in the semester
+        const firstDay = getFirstDateForDay(semesterStart, day);
+        const dtstart = formatICSTime(firstDay, entry.startTime);
+        const dtend = formatICSTime(firstDay, entry.endTime);
+        // UNTIL should be the last day at 23:59:59 UTC
+        const until = semesterEnd.replace(/-/g, '') + 'T235959Z';
+        // Debug log for each VEVENT
+        console.log(`VEVENT: ${entry.course} | Day: ${day} | DTSTART: ${dtstart} | RRULE: FREQ=WEEKLY;BYDAY=${byday};UNTIL=${until}`);
+        ics += 'BEGIN:VEVENT\n';
+        ics += `SUMMARY:${entry.course}\n`;
+        ics += `DTSTART;TZID=America/Chicago:${dtstart}\n`;
+        ics += `DTEND;TZID=America/Chicago:${dtend}\n`;
+        ics += `RRULE:FREQ=WEEKLY;BYDAY=${byday};UNTIL=${until}\n`;
+        if (entry.location) ics += `LOCATION:${entry.location}\n`;
+        ics += 'END:VEVENT\n';
+      });
+    });
+    ics += 'END:VCALENDAR\n';
+    // Download as .ics file
+    const blob = new Blob([ics.replace(/\n/g, '\r\n')], { type: 'text/calendar' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'schedule.ics';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+  }
+
   return (
     <ErrorBoundary
       FallbackComponent={ErrorFallback}
@@ -267,6 +342,7 @@ const ScheduleUpload: React.FC = () => {
           <div className="mb-4">
             <input
               type="file"
+              ref={fileInputRef}
               onChange={handleFileChange}
               accept="image/png,image/jpeg,image/jpg"
               className="hidden"
@@ -284,19 +360,37 @@ const ScheduleUpload: React.FC = () => {
           </div>
           
           {image && (
-            <div className="mt-4">
-              <p className="text-sm text-gray-600">Selected: {image.name}</p>
-              <button
-                onClick={handleUpload}
-                disabled={loading}
-                className={`mt-2 px-4 py-2 rounded text-white ${
-                  loading
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-green-600 hover:bg-green-700'
-                }`}
-              >
-                {loading ? 'Processing...' : 'Upload and Process'}
-              </button>
+            <div className="mt-4 flex flex-col items-center">
+              <div className="flex items-center gap-4">
+                <p className="text-sm text-gray-600">Selected: {image.name}</p>
+                <button
+                  onClick={handleUpload}
+                  disabled={loading}
+                  className={`mt-2 px-4 py-2 rounded text-white ml-4 ${
+                    loading
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-green-600 hover:bg-green-700'
+                  }`}
+                >
+                  {loading ? 'Processing...' : 'Upload and Process'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImage(null);
+                    setEntries([]);
+                    setRawBlocks([]);
+                    setGroupedTableEntries([]);
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = '';
+                      fileInputRef.current.click();
+                    }
+                  }}
+                  className="mt-2 px-4 py-2 rounded text-white bg-blue-500 hover:bg-blue-700 ml-2"
+                >
+                  Reupload
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -310,7 +404,35 @@ const ScheduleUpload: React.FC = () => {
         {entries.length > 0 && !loading && (
           <div className="space-y-8">
             <Calendar entries={entries} />
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-center mt-4">
+              <label className="flex flex-col items-center">
+                <span className="font-medium mb-1">Semester Start Date</span>
+                <input
+                  type="date"
+                  value={semesterStart}
+                  onChange={e => setSemesterStart(e.target.value)}
+                  className="border rounded px-2 py-1"
+                />
+              </label>
+              <label className="flex flex-col items-center">
+                <span className="font-medium mb-1">Semester End Date</span>
+                <input
+                  type="date"
+                  value={semesterEnd}
+                  onChange={e => setSemesterEnd(e.target.value)}
+                  className="border rounded px-2 py-1"
+                />
+              </label>
+            </div>
             <ScheduleTable entries={groupedTableEntries} onEdit={handleEdit} />
+            <div className="flex justify-center mt-4">
+              <button
+                onClick={downloadICS}
+                className="px-6 py-2 rounded bg-purple-700 text-white font-semibold hover:bg-purple-800 shadow"
+              >
+                Download .ics
+              </button>
+            </div>
           </div>
         )}
         {entries.length === 0 && rawBlocks.length > 0 && !loading && (

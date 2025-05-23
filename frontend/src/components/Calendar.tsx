@@ -122,11 +122,11 @@ const Calendar: React.FC<Props> = ({ entries }) => {
       </div>
       
       <div className="grid grid-cols-[100px_repeat(5,1fr)] relative">
-        <div className="divide-y">
+        <div className="border-r border-gray-200 bg-white">
           {timeSlots.map(time => (
             <div
               key={time}
-              className="h-[30px] p-2 text-xs text-gray-500 w-32"
+              className="h-[30px] p-2 text-xs text-gray-500 w-[200px]"
             >
               {format12Hour(time)}
             </div>
